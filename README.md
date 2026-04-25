@@ -9,6 +9,16 @@ You can run the script from the command line:
 
     python3 spotify-backup.py playlists.txt
 
+The browser authorization flow uses Spotify's Authorization Code with PKCE flow.
+If the bundled Spotify app client ID is rejected for your account, create your own
+Spotify app, add `http://127.0.0.1:43019/redirect` as a redirect URI, and run:
+
+    SPOTIFY_CLIENT_ID=your_client_id python3 spotify-backup.py playlists.txt
+
+or:
+
+    python3 spotify-backup.py playlists.txt --client-id=your_client_id
+
 or, to get a JSON dump, use:
 
     python3 spotify-backup.py playlists.json --format=json
