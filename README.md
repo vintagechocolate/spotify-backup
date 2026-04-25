@@ -23,6 +23,10 @@ or, to get a merged JSON export, use:
 
     python3 spotify-backup.py playlists.json --format=json
 
+To merge your Liked Songs and playlists into one JSON export, use:
+
+    python3 spotify-backup.py playlist.json --dump=liked,playlists --format=json
+
 JSON exports are written as a single `Spotify Backup` playlist using your Spotify
 user ID. Tracks from all selected playlists are merged before writing this
 simplified shape:
