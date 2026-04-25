@@ -208,6 +208,112 @@ class SpotifyAPI:
 		pass
 
 
+def format_duration(duration_ms):
+	if duration_ms is None:
+		return ''
+	total_seconds = int(duration_ms) // 1000
+	minutes, seconds = divmod(total_seconds, 60)
+	hours, minutes = divmod(minutes, 60)
+	if hours:
+		return f'{hours}:{minutes:02}:{seconds:02}'
+	return f'{minutes}:{seconds:02}'
+
+
+def thumbnail_url(album):
+	images = album.get('images') or []
+	if not images:
+		return None
+	return min(images, key=lambda image: (image.get('height') or sys.maxsize) *
+	                                  (image.get('width') or sys.maxsize)).get('url')
+
+
+def simplified_track(track):
+	album = track.get('album') or {}
+	artists = track.get('artists') or []
+	artist_names = [artist['name'] for artist in artists if artist.get('name')]
+	return {
+		'artist': ', '.join(artist_names),
+		'name': track.get('name'),
+		'album': album.get('name'),
+		'thumbnail': thumbnail_url(album),
+		'duration': format_duration(track.get('duration_ms')),
+		'stream': None
+	}
+
+
+def track_uri_from_item(item):
+	if not isinstance(item, dict):
+		return None
+	track = item.get('track')
+	if not isinstance(track, dict):
+		return None
+	return track.get('uri')
+
+
+def album_uri_from_item(item):
+	if not isinstance(item, dict):
+		return None
+	album = item.get('album')
+	if not isinstance(album, dict):
+		return None
+	return album.get('uri')
+
+
+def dedupe_playlist_tracks(playlists):
+	seen = set()
+	removed = 0
+	for playlist in playlists:
+		deduped_tracks = []
+		for item in playlist['tracks']:
+			uri = track_uri_from_item(item)
+			if uri:
+				if uri in seen:
+					removed += 1
+					continue
+				seen.add(uri)
+			deduped_tracks.append(item)
+		playlist['tracks'] = deduped_tracks
+	return removed
+
+
+def dedupe_albums(albums):
+	seen = set()
+	deduped_albums = []
+	removed = 0
+	for item in albums:
+		uri = album_uri_from_item(item)
+		if uri:
+			if uri in seen:
+				removed += 1
+				continue
+			seen.add(uri)
+		deduped_albums.append(item)
+	return deduped_albums, removed
+
+
+def merged_json_export(user, playlists):
+	tracks = []
+	seen = set()
+	for playlist in playlists:
+		for item in playlist['tracks']:
+			if not isinstance(item, dict):
+				continue
+			track = item.get('track')
+			if track is None:
+				continue
+			uri = track_uri_from_item(item)
+			if uri:
+				if uri in seen:
+					continue
+				seen.add(uri)
+			tracks.append(simplified_track(track))
+	return {
+		'name': 'Spotify Backup',
+		'id': user['id'],
+		'tracks': tracks
+	}
+
+
 def main():
 	# Parse arguments.
 	parser = argparse.ArgumentParser(description='Exports your Spotify playlists. By default, opens a browser window '
@@ -261,16 +367,22 @@ def main():
 			logging.info('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlist))
 			playlist['tracks'] = spotify.list(playlist['tracks']['href'], {'limit': 100})
 		playlists += playlist_data
+
+	duplicate_tracks = dedupe_playlist_tracks(playlists)
+	if duplicate_tracks:
+		logging.info(f'Removed {duplicate_tracks} duplicate tracks by Spotify URI')
+	liked_albums, duplicate_albums = dedupe_albums(liked_albums)
+	if duplicate_albums:
+		logging.info(f'Removed {duplicate_albums} duplicate albums by Spotify URI')
 	
 	# Write the file.
 	logging.info('Writing files...')
 	with open(args.file, 'w', encoding='utf-8') as f:
 		# JSON file.
 		if args.format == 'json':
-			json.dump({
-				'playlists': playlists,
-				'albums': liked_albums
-			}, f)
+			export = merged_json_export(me, playlists)
+			json.dump(export, f, ensure_ascii=False, indent=2)
+			logging.info(f'Merged {len(export["tracks"])} unique tracks into JSON export')
 		
 		# Tab-separated file.
 		else:

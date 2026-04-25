@@ -19,13 +19,36 @@ or:
 
     python3 spotify-backup.py playlists.txt --client-id=your_client_id
 
-or, to get a JSON dump, use:
+or, to get a merged JSON export, use:
 
     python3 spotify-backup.py playlists.json --format=json
+
+JSON exports are written as a single `Spotify Backup` playlist using your Spotify
+user ID. Tracks from all selected playlists are merged before writing this
+simplified shape:
+
+    {
+      "name": "Spotify Backup",
+      "id": "your_spotify_user_id",
+      "tracks": [
+        {
+          "artist": "Artist Name",
+          "name": "Track Name",
+          "album": "Album Name",
+          "thumbnail": "https://i.scdn.co/image/...",
+          "duration": "3:24",
+          "stream": null
+        }
+      ]
+    }
 
 By default, it includes your playlists. To include your Liked Songs, you can use:
 
     python3 spotify-backup.py playlists.txt --dump=liked,playlists
+
+All exports remove duplicate tracks by Spotify URI before writing the output, so
+the same track will not appear twice in either TXT or JSON files. Liked Albums are
+also deduplicated by Spotify album URI when included in TXT output.
 
 
 If for some reason the browser-based authorization flow doesn't work, you can also [generate an OAuth token](https://developer.spotify.com/web-api/console/get-playlists/) on the developer site (with the `playlist-read-private` permission) and pass it with the `--token` option.
