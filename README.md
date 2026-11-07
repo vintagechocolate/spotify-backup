@@ -58,3 +58,19 @@ also deduplicated by Spotify album URI when included in TXT output.
 If for some reason the browser-based authorization flow doesn't work, you can also [generate an OAuth token](https://developer.spotify.com/web-api/console/get-playlists/) on the developer site (with the `playlist-read-private` permission) and pass it with the `--token` option.
 
 Collaborative playlists and playlist folders don't show up in the API, sadly.
+
+## Troubleshooting
+
+### `CERTIFICATE_VERIFY_FAILED` on macOS
+
+If login fails with `unable to get local issuer certificate`, your Python
+installation may be missing its trusted root certificates. This can happen with
+Python installed from python.org, even when Spotify opens normally in your browser.
+
+Run the certificate installer bundled with your Python version. For Python 3.14:
+
+    "/Applications/Python 3.14/Install Certificates.command"
+
+Replace `3.14` with your installed Python version if needed. The installer installs
+or updates the `certifi` certificate bundle and repairs Python's certificate-bundle
+link. Once it finishes, rerun your backup command.
