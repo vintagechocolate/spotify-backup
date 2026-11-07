@@ -74,8 +74,3 @@ Run the certificate installer bundled with your Python version. For Python 3.14:
 Replace `3.14` with your installed Python version if needed. The installer installs
 or updates the `certifi` certificate bundle and repairs Python's certificate-bundle
 link. Once it finishes, rerun your backup command.
-
-## Development
-
-The default and publishing branch is `main` on both GitLab and GitHub. All updates
-must target `main`.
